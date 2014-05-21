@@ -10,14 +10,14 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 using namespace std;
-const uint32_t MAX_TOF = 128;
-const uint32_t MAX_DET =   2;
-const uint32_t MAX_PRD =   1;
+const uint32_t NX_MAX_DET =   2;
+const uint32_t NX_MAX_PRD =   1;
 
 #include "log.h"
 #include "config.h"
 
-
+const uint32_t MAX_TOF = 128;
+const uint32_t MAX_DET =6400;
 const uint32_t BIN_DET =80;
 double NxsMap[MAX_DET+5][MAX_TOF];
 double ErrMap[MAX_DET+5][MAX_TOF];
@@ -293,13 +293,13 @@ void SaveNexusFile(){
   file.makeGroup("detector_1","NXdata");
   file.openGroup("detector_1","NXdata");
 
-  int CountMap[MAX_PRD][MAX_DET][MAX_TOF];
+  int CountMap[NX_MAX_PRD][NX_MAX_DET][MAX_TOF];
   float TofIdx[MAX_TOF];
-  int PeriodIdx[MAX_PRD];
-  int SpectrumIdx[MAX_DET];
+  int PeriodIdx[NX_MAX_PRD];
+  int SpectrumIdx[NX_MAX_DET];
 
-  for(int i = 0; i< MAX_PRD; i++){
-    for(int j = 0; j< MAX_DET; j++){
+  for(int i = 0; i< NX_MAX_PRD; i++){
+    for(int j = 0; j< NX_MAX_DET; j++){
       for(int k = 0; k< MAX_TOF; k++){
 	CountMap[i][j][k]=j*10+k; 
       }
@@ -311,17 +311,17 @@ void SaveNexusFile(){
     std::cout << TofIdx[i] << std::endl;
   }
 
-  for(int i = 0; i< MAX_PRD; i++){
+  for(int i = 0; i< NX_MAX_PRD; i++){
     PeriodIdx[i]=i+1; 
   }
 
-  for(int i = 0; i< MAX_DET; i++){
+  for(int i = 0; i< NX_MAX_DET; i++){
     SpectrumIdx[i]=i+4; 
   }
 
   dim.clear();
-  dim.push_back(MAX_PRD);
-  dim.push_back(MAX_DET);
+  dim.push_back(NX_MAX_PRD);
+  dim.push_back(NX_MAX_DET);
   dim.push_back(MAX_TOF);
   file.makeData("counts",NeXus::INT32,dim,true);
   file.putData(CountMap);
@@ -339,13 +339,13 @@ void SaveNexusFile(){
   file.closeData();
 
   dim.clear();
-  dim.push_back(MAX_DET);
+  dim.push_back(NX_MAX_DET);
   file.makeData("spectrum_index",NeXus::INT32,dim,true);
   file.putData(SpectrumIdx);
   file.closeData();
 
   dim.clear();
-  dim.push_back(MAX_PRD);
+  dim.push_back(NX_MAX_PRD);
   file.makeData("period_index",NeXus::INT32,dim,true);
   file.putData(PeriodIdx);
   file.closeData();
@@ -403,7 +403,7 @@ void SaveNexusFile(){
   file.closeData();
 
   dim.clear();
-  dim.push_back(MAX_PRD);
+  dim.push_back(NX_MAX_PRD);
   file.makeData("period_index",NeXus::INT32,dim,true);
   file.putData(PeriodIdx);
   file.closeData();
@@ -460,7 +460,7 @@ void SaveNexusFile(){
   file.closeData();
 
   dim.clear();
-  dim.push_back(MAX_PRD);
+  dim.push_back(NX_MAX_PRD);
   file.makeData("period_index",NeXus::INT32,dim,true);
   file.putData(PeriodIdx);
   file.closeData();
@@ -517,7 +517,7 @@ void SaveNexusFile(){
   file.closeData();
 
   dim.clear();
-  dim.push_back(MAX_PRD);
+  dim.push_back(NX_MAX_PRD);
   file.makeData("period_index",NeXus::INT32,dim,true);
   file.putData(PeriodIdx);
   file.closeData();
@@ -615,10 +615,138 @@ void SaveNexusFile(){
   file.close();
 }
 
+void SaveHeaderToBinaryFile(ofstream& fout, uint8_t *type, uint8_t *module, uint32_t *subsecond) {
+  /*----------------------------------------------*/
+  Pulse_Header* pulseHeader = new Pulse_Header;
+  Encode_PulseHeader(pulseHeader, type, module, subsecond);
+  fout.write((char*)pulseHeader, sizeof(Pulse_Header));
+  delete pulseHeader;
+}
+
+void SaveTimeStampToBinaryFile(ofstream& fout, time_t *second){
+  /*----------------------------------------------*/
+  Pulse_Time* pulseTime = new Pulse_Time;
+  Encode_PulseTime(pulseTime, second);
+  fout.write((char*)pulseTime, sizeof(Pulse_Time));
+  delete pulseTime;
+}
+
+void SaveEventToBinaryFile(ofstream& fout, uint8_t *PSD, uint32_t *TOF, uint32_t *QA, uint32_t *QB){
+  Event* event = new Event;
+  Encode_Event(event, PSD, TOF, QA, QB);
+  fout.write((char*)event, sizeof(Event));
+  delete event;
+}
+
+void SaveEOPToBinaryFile(ofstream& fout){
+  /*----------------------------------------------*/
+  EndOfPulse* eop = new EndOfPulse;
+  Encode_EOP(eop); 
+  fout.write((char*)eop, sizeof(EndOfPulse));
+  delete eop;
+}
+
+uint32_t Get_PositionID(uint32_t qa, uint32_t qb){
+  if ((qa+qb)<1){
+    //std::cout << "qa " << qa << " qb " << qb << std::endl;
+    return 0;
+  }
+  double R = (double)qa/(qa+qb);
+  double P = R*BIN_DET;
+  int IntP = (uint32_t)P;
+  double D = P - IntP;
+  if(D>0.5){
+    return (IntP + 1);
+  }
+  else{
+    return IntP;
+  }
+}
+
+void SaveBinaryFile(uint32_t *cmap, std::string binaryfilename){
+  int counts = 0;
+  int pulses = 0;
+  std::cout << "SaveBinaryFile" << std::endl;
+  std::ofstream fout(binaryfilename.c_str(), std::ios::binary); 
+
+  std::time_t UnixTime = std::time(0);  // t is an integer type
+  time_t   second    = UnixTime;
+  uint32_t subsecond = 0;
+
+  uint8_t type   = 0x0;
+  uint8_t module = 0x1;
+
+  SaveHeaderToBinaryFile(fout, &type, &module, &subsecond);
+  SaveTimeStampToBinaryFile(fout, &second);
+  /*----------------------------------------------*/
+  srand((int)time(0));
+  std::cout << "SaveEvent" << std::endl;
+  for(int i=0; i < MAX_TOF ; i++){
+    uint32_t TOF = i;
+    for(int j=0; j < MAX_DET ; j++){
+      uint8_t PSD = PSDIdx(j);
+      uint8_t pos = PosIdx(j);
+      double R = ((double)pos)/BIN_DET;
+      for(int k=0;k<cmap[MapIdx(i,j)];k++){
+	// rand end of one pluse, and begin an new pulse 
+	if((rand()%10)<2.0){
+	  pulses++;
+	  subsecond = 150000000*(pulses%25);
+	  if(0==(pulses%25))UnixTime=UnixTime+100000;
+	  if(0==(pulses%100000)) std::cout << "SaveEOP " << pulses << " pulses "<< counts  << " events " << std::endl; 
+	  SaveEOPToBinaryFile(fout);
+	  SaveHeaderToBinaryFile(fout, &type, &module, &subsecond);
+	  SaveTimeStampToBinaryFile(fout, &second);
+
+	}
+	// one neutron event
+	counts +=1;
+	uint32_t QB = 0;
+	uint32_t QA = 0;
+	if(R<0.5){
+	  QB = (rand()%1024+1);
+	  QA = R*QB/(1-R);
+	}
+	else{
+	  QA = (rand()%1024+1);
+	  QB = QA*(1-R)/R;
+	}
+	SaveEventToBinaryFile(fout, &PSD, &TOF, &QA, &QB);
+	// one neutron event
+      }
+    }
+  }
+  SaveEOPToBinaryFile(fout);
+  std::cout << "SaveEOP " << pulses << " pulses "<< counts  << " events " << std::endl; 
+  std::cout << "Save count " << counts << std::endl; 
+
+
+  /*----------------------------------------------*/
+  fout.close();
+}
+
+
+void Map_EventToDetector(uint32_t *dmap, uint32_t *module, uint32_t *psd, uint32_t *tof, uint32_t *qa, uint32_t *qb){
+  uint32_t pos_id = Get_PositionID(*qa, *qb);
+  uint32_t det_id = (*psd) * BIN_DET + pos_id;
+  uint32_t id = (*tof) * MAX_DET + det_id;
+  std::cout << "(" << *psd << "/" << pos_id << "/" << det_id << "/" << *tof << "/"<<id << ")" << std::endl;
+  dmap[id] += 1;
+  //std::cout << " Map Event: module " << *module << " psd " << *psd 
+  //  << " tof " << *tof << " qa "  << *qa << " qb " << *qb  
+  //  << " pos id " << pos_id  << " det id " << det_id 
+  //  << " Matrix " << id << std::endl; 
+}
 
 int main(int argc, char *argv[])
 {
-  SaveNexusFile();
+  if ( argc != 2 ) {
+    std::cout << "Usage: " << argv[0] << "  option.txt" << std::endl;
+    return 1;
+  }
+
+  std::string configfile(argv[1]);
+  Config* fConfig = new Config(configfile);SaveNexusFile();
 
   return 0;
 }
