@@ -18,6 +18,112 @@ const uint32_t MAX_PRD =   1;
 #include "config.h"
 
 
+const uint32_t BIN_DET =80;
+double NxsMap[MAX_DET+5][MAX_TOF];
+double ErrMap[MAX_DET+5][MAX_TOF];
+double TofMap[MAX_TOF];
+int DetMap[MAX_DET];
+int DetCount[MAX_DET];
+int SpectraIdx[MAX_DET];
+double DetPositions[MAX_DET][3];
+
+typedef struct __MODULEEVT{
+  uint8_t psd;
+  uint32_t tof;
+}Module_Evt;
+
+typedef struct __HEADER{
+  uint32_t subsecond;
+  uint8_t  module;
+  uint8_t  reserve2;
+  uint8_t  type;
+  uint8_t  header;
+}Pulse_Header;
+
+typedef struct __TIME{
+  time_t second;
+}Pulse_Time;
+
+typedef struct __EVENT{
+  uint8_t evt[7];
+  uint8_t psd;
+}Event;
+
+typedef struct __EOP{
+  uint8_t reserve2;
+  uint8_t reserve3;
+  uint8_t reserve4;
+  uint8_t reserve5;
+  uint8_t reserve6;
+  uint8_t reserve7;
+  uint8_t reserve8;
+  uint8_t eop;
+}EndOfPulse;
+
+
+uint32_t MapIdx(uint32_t tofidx, uint32_t detidx){
+  return tofidx*MAX_DET+detidx;
+}
+
+uint32_t TofIdx(uint32_t mapidx){
+  return mapidx/MAX_DET;
+}
+
+uint32_t DetIdx(uint32_t mapidx){
+  return mapidx%MAX_DET;
+}
+
+uint8_t PSDIdx(uint32_t detidx){
+  return detidx/BIN_DET;
+}
+
+uint8_t PosIdx(uint32_t detidx){
+  return detidx%BIN_DET;
+}
+
+void Encode_PulseHeader(Pulse_Header* pulseHeader, uint8_t *type, uint8_t *module, uint32_t *subsecond){
+  pulseHeader->header    = 0x0;
+  pulseHeader->type      = *type;
+  pulseHeader->module    = *module;
+  pulseHeader->subsecond = *subsecond; 
+}
+
+void Decode_PulseHeader(uint64_t *buff, uint32_t *type, uint32_t *module, uint32_t *subsecond ){
+  *type      = (uint32_t) (((*buff)>>48)&0xFF);
+  *module    = (uint32_t) (((*buff)>>32)&0xFF); 
+  *subsecond = (uint32_t) ((*buff)&0xFFFFFFFF);
+}
+
+void Encode_PulseTime(Pulse_Time* pulseTime, time_t *second){
+  pulseTime->second    = *second; 
+}
+
+void Decode_PulseTime(uint64_t *buff, time_t *second ){
+  *second = (time_t) (* buff); 
+}
+
+void Encode_Event(Event* event, uint8_t *psd, uint32_t *tof, uint32_t *qa, uint32_t *qb){
+  event->psd = *psd;
+  event->evt[6] = ( (*tof) >>20); 
+  event->evt[5] = ( (*tof) >>12); 
+  event->evt[4] = ( (*tof) >>4); 
+  event->evt[3] = (((*tof) & 0xF  )<<4) + (((*qa) & 0x3C00)>>10); 
+  event->evt[2] = (((*qa)  & 0x3FC)>>2); 
+  event->evt[1] = (((*qa)  & 0x3  )<<6) + (((*qb) & 0x3F00)>>8); 
+  event->evt[0] = ((*qb) & 0xFF); 
+}
+
+void Decode_Event(uint64_t *buff, uint32_t *psd, uint32_t *tof, uint32_t *qa, uint32_t *qb ){
+  *psd = (uint32_t) (((*buff) >> 56 ) & 0xFF);
+  *tof = (uint32_t) (((*buff) >> 28 ) & 0xFFFFFFF);
+  *qa  = (uint32_t) (((*buff) >> 14 ) & 0x3FFF);
+  *qb  = (uint32_t) (( *buff) & 0x3FFF);
+}
+
+void Encode_EOP(EndOfPulse* eop){
+  eop->eop = 0xFF;
+}
+
 void SaveNexusFile2(){
   std::cout << "SavenexusFile2 " << __LINE__  << std::endl;
   NeXus::File file("test.nxs",  NXACC_CREATE5);
