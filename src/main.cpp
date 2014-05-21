@@ -124,7 +124,7 @@ void Encode_EOP(EndOfPulse* eop){
   eop->eop = 0xFF;
 }
 
-void SaveNexusFile2(){
+void SaveNexusFile(){
   std::cout << "SavenexusFile2 " << __LINE__  << std::endl;
   NeXus::File file("test.nxs",  NXACC_CREATE5);
   std::vector<int> dim;
@@ -534,40 +534,6 @@ void SaveNexusFile2(){
   std::string read_control = "Detector Mode";
   std::string set_control  = "Detector Select";
 
-  ////enter group: raw_data_1/selog/Detector
-  //file.makeGroup("Detector","IXseblock");
-  //file.openGroup("Detector","IXseblock");
-
-
-  //dim.clear();
-  //dim.push_back(read_control.length());
-  //file.makeData("read_control",NeXus::CHAR,dim,true);
-  //file.putData(read_control.c_str());
-  //file.closeData();
-
-  //dim.clear();
-  //dim.push_back(set_control.length());
-  //file.makeData("set_control",NeXus::CHAR,dim,true);
-  //file.putData(set_control.c_str());
-  //file.closeData();
-
-  //dim.clear();
-  //dim.push_back(1);
-  //file.makeData("value",NeXus::FLOAT32,dim,true);
-  //file.putData(Values);
-  //file.putAttr("units","mm");
-  //file.closeData();
-
-  //dim.clear();
-  //dim.push_back(1);
-  //file.makeData("setpoint",NeXus::FLOAT32,dim,true);
-  //file.putData(Values);
-  //file.putAttr("units","mm");
-  //file.closeData();
-
-  ////close group: raw_data_1/selog/Detector
-  //file.closeGroup();
-
   //enter group: raw_data_1/selog/PD1H
   file.makeGroup("PD1H","IXseblock");
   file.openGroup("PD1H","IXseblock");
@@ -639,43 +605,6 @@ void SaveNexusFile2(){
   //close group: raw_data_1/selog/PD1H
   file.closeGroup();
 
-  ////enter group: raw_data_1/selog/PD1A
-  //file.makeGroup("PD1A","IXseblock");
-  //file.openGroup("PD1A","IXseblock");
-
-  //Values[0] = 0.3;
-
-  //read_control = "PD1 Angle Position";
-  //dim.clear();
-  //dim.push_back(read_control.length());
-  //file.makeData("read_control",NeXus::CHAR,dim,true);
-  //file.putData(read_control.c_str());
-  //file.closeData();
-
-  //set_control = "PD1 Angle";
-  //dim.clear();
-  //dim.push_back(set_control.length());
-  //file.makeData("set_control",NeXus::CHAR,dim,true);
-  //file.putData(set_control.c_str());
-  //file.closeData();
-
-  //dim.clear();
-  //dim.push_back(1);
-  //file.makeData("value",NeXus::FLOAT32,dim,true);
-  //file.putData(Values);
-  //file.putAttr("units","mm");
-  //file.closeData();
-
-  //dim.clear();
-  //dim.push_back(1);
-  //file.makeData("setpoint",NeXus::FLOAT32,dim,true);
-  //file.putData(Values);
-  //file.putAttr("units","mm");
-  //file.closeData();
-
-  ////close group: raw_data_1/selog/PD1A
-  //file.closeGroup();
-
   //close group: raw_data_1/selog
   file.closeGroup();
 
@@ -686,9 +615,10 @@ void SaveNexusFile2(){
   file.close();
 }
 
+
 int main(int argc, char *argv[])
 {
-  SaveNexusFile2();
+  SaveNexusFile();
 
   return 0;
 }
