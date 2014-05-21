@@ -1,0 +1,6 @@
+directbeam   = yes
+# direct_tof
+nexusfile    = /home/tianhl/workarea/CSNS_SANS_SIM/app/test/directbeam.nxs
+tranfile1    = /home/tianhl/workarea/CSNS_SANS_SIM/direct/direct_trans_M1.txt
+tranfile2    = /home/tianhl/workarea/CSNS_SANS_SIM/direct/direct_trans_M2.txt
+tranfile3    = /home/tianhl/workarea/CSNS_SANS_SIM/direct/direct_trans_M3.txt
