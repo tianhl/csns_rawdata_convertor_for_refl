@@ -16,8 +16,10 @@ const uint32_t NX_MAX_PRD =   1;
 #include "log.h"
 #include "config.h"
 
-const uint32_t MAX_TOF = 128;
-const uint32_t MAX_DET =6400;
+const uint32_t MAX_TOF =3626 ;
+//const uint32_t MAX_TOF =13 ;
+const uint32_t MAX_DET =8000;
+//const uint32_t MAX_DET =30;
 const uint32_t BIN_DET =80;
 double NxsMap[MAX_DET+5][MAX_TOF];
 double ErrMap[MAX_DET+5][MAX_TOF];
@@ -124,7 +126,7 @@ void Encode_EOP(EndOfPulse* eop){
   eop->eop = 0xFF;
 }
 
-void SaveNexusFile(){
+void SaveNexusFile(uint32_t* dmap, uint32_t* mmap, std::string nexusfilename ){
   std::cout << "SavenexusFile2 " << __LINE__  << std::endl;
   NeXus::File file("test.nxs",  NXACC_CREATE5);
   std::vector<int> dim;
@@ -308,7 +310,7 @@ void SaveNexusFile(){
 
   for(int i = 0; i< MAX_TOF; i++){
     TofIdx[i]=float(i*5.0+0.5); 
-    std::cout << TofIdx[i] << std::endl;
+    //std::cout << TofIdx[i] << std::endl;
   }
 
   for(int i = 0; i< NX_MAX_PRD; i++){
@@ -730,12 +732,138 @@ void Map_EventToDetector(uint32_t *dmap, uint32_t *module, uint32_t *psd, uint32
   uint32_t pos_id = Get_PositionID(*qa, *qb);
   uint32_t det_id = (*psd) * BIN_DET + pos_id;
   uint32_t id = (*tof) * MAX_DET + det_id;
-  std::cout << "(" << *psd << "/" << pos_id << "/" << det_id << "/" << *tof << "/"<<id << ")" << std::endl;
+  //std::cout << "(" << *psd << "/" << pos_id << "/" << det_id << "/" << *tof << "/"<<id << ")" << std::endl;
   dmap[id] += 1;
   //std::cout << " Map Event: module " << *module << " psd " << *psd 
   //  << " tof " << *tof << " qa "  << *qa << " qb " << *qb  
   //  << " pos id " << pos_id  << " det id " << det_id 
   //  << " Matrix " << id << std::endl; 
+}
+
+
+void LoadSimulationFile(uint32_t* cmap, std::string samplefilename){
+
+    std::cout << "LoadSimulationFile "<< std::endl;
+    std::ifstream samplefile(samplefilename.c_str());
+    //std::ifstream samplefile("/home/tianhl/workarea/CSNS_SANS_SIM/app/test/test_raw");
+    string samplebuff;
+    getline(samplefile, samplebuff);
+    uint32_t tot=0;
+
+    for (int tofidx=0;tofidx<MAX_TOF ;tofidx++){
+      getline(samplefile, samplebuff);
+      vector<string> substring;
+      //std::cout << "new line " << tofidx << " " << samplebuff << std::endl;
+      vector<double> counts;
+      //boost::split( substring, samplebuff, boost::is_any_of( "\t " ), boost::token_compress_on );
+      boost::split( substring, samplebuff, boost::is_any_of( ";" ), boost::token_compress_on );
+      //std::cout <<"Process Line " <<  tofidx << std::endl;
+      for(uint32_t detidx = 0; detidx < MAX_DET  ; detidx++){
+	cmap[MapIdx(tofidx, detidx)] =atoi(substring[detidx+1].c_str());
+	cmap[MapIdx(tofidx, detidx)] =(int)(atoi(substring[detidx+1].c_str()));
+	//      std::cout << "tofidx " << tofidx << " detidx " << detidx 
+	//	<< " MapIdx " << MapIdx(tofidx,detidx) << std::endl;
+	//      std::cout << "rtof   " << TofIdx(MapIdx(tofidx,detidx))  
+	//	<< " rdet   " << DetIdx(MapIdx(tofidx,detidx)) << std::endl;
+	tot+=(int)(atoi(substring[detidx+1].c_str()));
+      }
+    }
+    std::cout << "total neutron hit count: " << tot << std::endl;
+    samplefile.close();
+}
+
+void LoadMonitorFile(uint32_t* mmap, std::string samplefilename){
+  std::cout << "LoadMonitorFile " << samplefilename << std::endl;
+  std::ifstream samplefile(samplefilename.c_str());
+
+  string samplebuff;
+  getline(samplefile, samplebuff);
+
+  //std::cout << samplebuff << std::endl; 
+  for (int tofidx=0;tofidx<MAX_TOF ;tofidx++){
+    getline(samplefile, samplebuff);
+
+    vector<string> substring;
+    boost::split( substring, samplebuff, boost::is_any_of( ";" ), boost::token_compress_on );
+    mmap[tofidx] =atoi(substring[1].c_str());
+    //std::cout << mmap[tofidx] << std::endl; 
+  }
+  samplefile.close();
+
+}
+
+
+uint64_t Decode_RawDataSegment(uint64_t *Buff, uint32_t *dmap, uint32_t size, uint8_t *flag){
+  //std::cout << "Enter Decode_RawDataSegment(), buffer size: " << size << std::endl;
+  uint64_t count = 0;
+  uint64_t *ReadRawData;// = new uint8_t[8]; 
+  time_t second;
+  uint32_t type, module, subsecond;
+  for (uint32_t i = 0; i < size ; i++ ){
+    ReadRawData = (uint64_t*)(Buff+i);
+    //std::cout << "idx " << i << " " << std::hex << *ReadRawData << std::endl;// << std::endl;
+    //std::cout << "zzz: " << std::hex << *ReadRawData << std::endl;
+    if ((((*ReadRawData)>>56) == 0x0) && (*flag == 0))  {
+      Decode_PulseHeader(ReadRawData, &type, &module, &subsecond);
+      //std::cout << " Header: type " << type << " module  " << module << " subsecond " << subsecond << std::endl;
+      *flag = 1;
+    }
+    else if (*flag == 1){
+      //int64_t second;
+      Decode_PulseTime(ReadRawData, &second);
+      //std::cout << " Time: second " << second  <<" "<< ctime((time_t*)&second)    <<  std::endl; 
+      *flag = 2; 
+      continue;
+    }
+    if ((((*ReadRawData)>>56) == 0xFF)&&(*flag >= 2)) {
+      //std::cout << " EndOfPulse" << std::endl; 
+      *flag = 0;
+    }
+    else if ((*flag == 2)||(*flag == 3)){
+      uint32_t psd, tof, qa, qb;
+      Decode_Event(ReadRawData, &psd, &tof, &qa, &qb);
+      count += 1;
+      if ((qa+qb)<1){
+	std::cout << "decode qa " << qa << " qb " << qb << std::endl;
+      }
+      Map_EventToDetector(dmap, &module,&psd, &tof, &qa, &qb );
+      *flag = 3;
+    }
+  }
+  return count;
+}
+
+void LoadBinaryFile(uint32_t *dmap, std::string binaryfilename){
+
+  /*----------------------------------------------*/
+  uint32_t size = 10000;
+  uint64_t count = 0;
+  uint8_t *flag = new uint8_t;
+  *flag = 0;
+  size_t buffsize = 0; 
+  uint64_t *Buff = new uint64_t[size]; 
+  std::ifstream fin(binaryfilename.c_str(), std::ios::binary);
+  fin.read((char*)Buff, sizeof(uint64_t)*size);
+  buffsize = fin.gcount();  
+  count += Decode_RawDataSegment(Buff, dmap, size, flag);
+  while (buffsize == (sizeof(uint64_t)*size)){
+    //std::cout << "LoadBinaryFile " << fin.gcount() << std::endl;
+    fin.read((char*)Buff, sizeof(uint64_t)*size);
+    buffsize = fin.gcount();  
+    if ((sizeof(uint64_t)*size) == buffsize ){
+      count += Decode_RawDataSegment(Buff, dmap, size, flag);
+    }
+    else{
+      //std::cout << "Read file " << buffsize/(sizeof(uint64_t)) << std::endl;
+      count += Decode_RawDataSegment(Buff, dmap, buffsize/(sizeof(uint64_t)), flag);
+    }
+  }
+  delete flag;
+  //std::cout << " raw data: "<< (uint32_t)ReadRawData[2] << " " << sizeof(time_t) << " " << sizeof(uint32_t)<< std::endl;
+  std::cout << " Read Event Count " << count << std::endl;
+
+
+  fin.close();
 }
 
 int main(int argc, char *argv[])
@@ -745,8 +873,45 @@ int main(int argc, char *argv[])
     return 1;
   }
 
+  uint32_t *cmap = new uint32_t[MAX_TOF*MAX_DET];
+  uint32_t *dmap = new uint32_t[MAX_TOF*MAX_DET];
+  uint32_t *mmap = new uint32_t[MAX_TOF];
+
   std::string configfile(argv[1]);
-  Config* fConfig = new Config(configfile);SaveNexusFile();
+  Config* fConfig = new Config(configfile);
+
+  std::string samplefile  ; 
+  std::string binaryfile  ;
+  std::string monitorfile ;
+  std::string nexusfile   ;
+
+  samplefile  = fConfig->pString("samplefile") ;  
+  binaryfile  = fConfig->pString("binaryfile") ; 
+  monitorfile = fConfig->pString("monitorfile") ; 
+  nexusfile   = fConfig->pString("nexusfile") ;
+
+  std::cout << "read sample file: " << samplefile << std::endl;
+  std::cout << "save binary file: " << binaryfile << std::endl;
+
+  LoadSimulationFile(cmap, samplefile); 
+  //for(int i = 0; i< MAX_TOF; i++){
+  //  for(int j = 0; j< MAX_DET; j++){
+  //    std::cout << cmap[MapIdx(i, j)] << " " ;
+  //  }
+  //  std::cout << std::endl;
+  //}
+  SaveBinaryFile(cmap, binaryfile);
+  LoadMonitorFile(mmap, monitorfile); 
+  LoadBinaryFile(dmap, binaryfile);
+  //std::cout << std::endl;
+  //for(int i = 0; i< MAX_TOF; i++){
+  //  for(int j = 0; j< MAX_DET; j++){
+  //    std::cout << dmap[MapIdx(i, j)] << " " ;
+  //  }
+  //  std::cout << std::endl;
+  //}
+
+  SaveNexusFile(dmap,mmap,nexusfile);
 
   return 0;
 }
