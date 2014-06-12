@@ -126,7 +126,7 @@ void Encode_EOP(EndOfPulse* eop){
   eop->eop = 0xFF;
 }
 
-void SaveNexusFile(uint32_t* dmap, uint32_t* mmap, std::string nexusfilename ){
+void SaveNexusFile(uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::string nexusfilename ){
   std::cout << "SavenexusFile2 " << __LINE__  << std::endl;
   NeXus::File file("test.nxs",  NXACC_CREATE5);
   std::vector<int> dim;
@@ -303,13 +303,13 @@ void SaveNexusFile(uint32_t* dmap, uint32_t* mmap, std::string nexusfilename ){
   for(int i = 0; i< NX_MAX_PRD; i++){
     for(int j = 0; j< NX_MAX_DET; j++){
       for(int k = 0; k< MAX_TOF; k++){
-	CountMap[i][j][k]=j*10+k; 
+	CountMap[i][j][k]=rebinmap[k]; 
       }
     }
   }
 
   for(int i = 0; i< MAX_TOF; i++){
-    TofIdx[i]=float(i*5.0+0.5); 
+    TofIdx[i]=float(i*8.0+11000); 
     //std::cout << TofIdx[i] << std::endl;
   }
 
@@ -359,14 +359,19 @@ void SaveNexusFile(uint32_t* dmap, uint32_t* mmap, std::string nexusfilename ){
   file.makeGroup("monitor_1","NXmonitor");
   file.openGroup("monitor_1","NXmonitor");
 
-  int MonitorMap[1][1][MAX_TOF];
+  int MonitorMap[1][1][2000];
 
   for(int i = 0; i< 1; i++){
     for(int j = 0; j< 1; j++){
-      for(int k = 0; k< MAX_TOF; k++){
-	MonitorMap[i][j][k]=1000+k; 
+      for(int k = 0; k< 2000; k++){
+	MonitorMap[i][j][k]=mmap[k]; 
       }
     }
+  }
+
+  float MIdx[2000];
+  for(int i = 0; i< 2000; i++){
+    MIdx[i]=float(midx[i]); 
   }
 
   for(int i = 0; i< 1; i++){
@@ -376,7 +381,7 @@ void SaveNexusFile(uint32_t* dmap, uint32_t* mmap, std::string nexusfilename ){
   dim.clear();
   dim.push_back(1);
   dim.push_back(1);
-  dim.push_back(MAX_TOF);
+  dim.push_back(2000);
   file.makeData("data",NeXus::INT32,dim,true);
   file.putData(MonitorMap);
   file.putAttr("units","counts");
@@ -385,9 +390,9 @@ void SaveNexusFile(uint32_t* dmap, uint32_t* mmap, std::string nexusfilename ){
   file.closeData();
 
   dim.clear();
-  dim.push_back(MAX_TOF);
+  dim.push_back(2000);
   file.makeData("time_of_flight",NeXus::FLOAT32,dim,true);
-  file.putData(TofIdx);
+  file.putData(MIdx);
   file.putAttr("units","microseconds");
   file.putAttr("axis","1");
   file.closeData();
@@ -420,8 +425,8 @@ void SaveNexusFile(uint32_t* dmap, uint32_t* mmap, std::string nexusfilename ){
 
   for(int i = 0; i< 1; i++){
     for(int j = 0; j< 1; j++){
-      for(int k = 0; k< MAX_TOF; k++){
-	MonitorMap[i][j][k]=2000+k; 
+      for(int k = 0; k< 2000; k++){
+	MonitorMap[i][j][k]=mmap[k]; 
       }
     }
   }
@@ -433,7 +438,7 @@ void SaveNexusFile(uint32_t* dmap, uint32_t* mmap, std::string nexusfilename ){
   dim.clear();
   dim.push_back(1);
   dim.push_back(1);
-  dim.push_back(MAX_TOF);
+  dim.push_back(2000);
   file.makeData("data",NeXus::INT32,dim,true);
   file.putData(MonitorMap);
   file.putAttr("units","counts");
@@ -442,9 +447,9 @@ void SaveNexusFile(uint32_t* dmap, uint32_t* mmap, std::string nexusfilename ){
   file.closeData();
 
   dim.clear();
-  dim.push_back(MAX_TOF);
+  dim.push_back(2000);
   file.makeData("time_of_flight",NeXus::FLOAT32,dim,true);
-  file.putData(TofIdx);
+  file.putData(MIdx);
   file.putAttr("units","microseconds");
   file.putAttr("axis","1");
   file.closeData();
@@ -477,8 +482,8 @@ void SaveNexusFile(uint32_t* dmap, uint32_t* mmap, std::string nexusfilename ){
 
   for(int i = 0; i< 1; i++){
     for(int j = 0; j< 1; j++){
-      for(int k = 0; k< MAX_TOF; k++){
-	MonitorMap[i][j][k]=3000+k; 
+      for(int k = 0; k< 2000; k++){
+	MonitorMap[i][j][k]=mmap[k]; 
       }
     }
   }
@@ -490,7 +495,7 @@ void SaveNexusFile(uint32_t* dmap, uint32_t* mmap, std::string nexusfilename ){
   dim.clear();
   dim.push_back(1);
   dim.push_back(1);
-  dim.push_back(MAX_TOF);
+  dim.push_back(2000);
   file.makeData("data",NeXus::INT32,dim,true);
   file.putData(MonitorMap);
   file.putAttr("units","counts");
@@ -499,9 +504,9 @@ void SaveNexusFile(uint32_t* dmap, uint32_t* mmap, std::string nexusfilename ){
   file.closeData();
 
   dim.clear();
-  dim.push_back(MAX_TOF);
+  dim.push_back(2000);
   file.makeData("time_of_flight",NeXus::FLOAT32,dim,true);
-  file.putData(TofIdx);
+  file.putData(MIdx);
   file.putAttr("units","microseconds");
   file.putAttr("axis","1");
   file.closeData();
@@ -772,7 +777,7 @@ void LoadSimulationFile(uint32_t* cmap, std::string samplefilename){
     samplefile.close();
 }
 
-void LoadMonitorFile(uint32_t* mmap, std::string samplefilename){
+void LoadMonitorFile(uint32_t* midx, uint32_t* mmap, std::string samplefilename){
   std::cout << "LoadMonitorFile " << samplefilename << std::endl;
   std::ifstream samplefile(samplefilename.c_str());
 
@@ -780,13 +785,14 @@ void LoadMonitorFile(uint32_t* mmap, std::string samplefilename){
   getline(samplefile, samplebuff);
 
   //std::cout << samplebuff << std::endl; 
-  for (int tofidx=0;tofidx<MAX_TOF ;tofidx++){
+  for (int tofidx=0;tofidx<2000 ;tofidx++){
     getline(samplefile, samplebuff);
 
     vector<string> substring;
     boost::split( substring, samplebuff, boost::is_any_of( ";" ), boost::token_compress_on );
     mmap[tofidx] =atoi(substring[1].c_str());
-    //std::cout << mmap[tofidx] << std::endl; 
+    midx[tofidx] =atoi(substring[0].c_str());
+    std::cout << midx[tofidx] << " " << mmap[tofidx] << std::endl; 
   }
   samplefile.close();
 
@@ -866,6 +872,32 @@ void LoadBinaryFile(uint32_t *dmap, std::string binaryfilename){
   fin.close();
 }
 
+
+double Rebin(uint32_t* dmap, uint32_t* rebinmap){
+  int sum=0;
+  float positionidx=0;
+
+  for(int t=0; t< MAX_TOF ; t++){
+    rebinmap[t]=0;
+    int integral[100];
+    for(int i = 0; i < 100; i++){
+      integral[i]=0;
+      for(int j = 0; j < 80; j++){
+	int det = j+i*100;
+	int mapidx = MapIdx(t, det);
+	integral[i]+=dmap[mapidx];
+      }
+    }
+    for(int i =0; i < 100; i++){
+      rebinmap[t]+=integral[i];
+      sum += integral[i];
+      positionidx += float(i*integral[i]);
+    }
+
+  }
+  return  positionidx/sum*2 ;
+}
+
 int main(int argc, char *argv[])
 {
   if ( argc != 2 ) {
@@ -875,7 +907,9 @@ int main(int argc, char *argv[])
 
   uint32_t *cmap = new uint32_t[MAX_TOF*MAX_DET];
   uint32_t *dmap = new uint32_t[MAX_TOF*MAX_DET];
-  uint32_t *mmap = new uint32_t[MAX_TOF];
+  uint32_t *mmap = new uint32_t[2000];
+  uint32_t *midx = new uint32_t[2000];
+  uint32_t *rebinmap = new uint32_t[MAX_TOF];
 
   std::string configfile(argv[1]);
   Config* fConfig = new Config(configfile);
@@ -893,15 +927,15 @@ int main(int argc, char *argv[])
   std::cout << "read sample file: " << samplefile << std::endl;
   std::cout << "save binary file: " << binaryfile << std::endl;
 
-  LoadSimulationFile(cmap, samplefile); 
+  //LoadSimulationFile(cmap, samplefile); 
   //for(int i = 0; i< MAX_TOF; i++){
   //  for(int j = 0; j< MAX_DET; j++){
   //    std::cout << cmap[MapIdx(i, j)] << " " ;
   //  }
   //  std::cout << std::endl;
   //}
-  SaveBinaryFile(cmap, binaryfile);
-  LoadMonitorFile(mmap, monitorfile); 
+  //SaveBinaryFile(cmap, binaryfile);
+  //LoadMonitorFile(midx, mmap, monitorfile); 
   LoadBinaryFile(dmap, binaryfile);
   //std::cout << std::endl;
   //for(int i = 0; i< MAX_TOF; i++){
@@ -911,7 +945,8 @@ int main(int argc, char *argv[])
   //  std::cout << std::endl;
   //}
 
-  SaveNexusFile(dmap,mmap,nexusfile);
+  Rebin(dmap, rebinmap);
+  SaveNexusFile(rebinmap ,mmap,midx,nexusfile);
 
   return 0;
 }
