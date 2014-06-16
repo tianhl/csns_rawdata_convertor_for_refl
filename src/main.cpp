@@ -126,7 +126,7 @@ void Encode_EOP(EndOfPulse* eop){
   eop->eop = 0xFF;
 }
 
-void SaveNexusFile(uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::string nexusfilename ){
+void SaveNexusFile(double offset, uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::string nexusfilename ){
   std::cout << "SavenexusFile2 " << __LINE__  << std::endl;
   NeXus::File file("test.nxs",  NXACC_CREATE5);
   std::vector<int> dim;
@@ -296,7 +296,7 @@ void SaveNexusFile(uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::stri
   file.openGroup("detector_1","NXdata");
 
   int CountMap[NX_MAX_PRD][NX_MAX_DET][MAX_TOF];
-  float TofIdx[MAX_TOF];
+  float TofIdx[MAX_TOF+1];
   int PeriodIdx[NX_MAX_PRD];
   int SpectrumIdx[NX_MAX_DET];
 
@@ -308,7 +308,7 @@ void SaveNexusFile(uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::stri
     }
   }
 
-  for(int i = 0; i< MAX_TOF; i++){
+  for(int i = 0; i< MAX_TOF+1; i++){
     TofIdx[i]=float(i*8.0+11000); 
     //std::cout << TofIdx[i] << std::endl;
   }
@@ -333,7 +333,7 @@ void SaveNexusFile(uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::stri
   file.closeData();
 
   dim.clear();
-  dim.push_back(MAX_TOF);
+  dim.push_back(MAX_TOF+1);
   file.makeData("time_of_flight",NeXus::FLOAT32,dim,true);
   file.putData(TofIdx);
   file.putAttr("units","microseconds");
@@ -359,13 +359,17 @@ void SaveNexusFile(uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::stri
   file.makeGroup("monitor_1","NXmonitor");
   file.openGroup("monitor_1","NXmonitor");
 
-  int MonitorMap[1][1][2000];
+  int MonitorMap[1][1][1999];
+  //int MonitorMap[1][1][MAX_TOF];
 
   for(int i = 0; i< 1; i++){
     for(int j = 0; j< 1; j++){
-      for(int k = 0; k< 2000; k++){
+      for(int k = 0; k< 1999; k++){
 	MonitorMap[i][j][k]=mmap[k]; 
       }
+      //for(int k = 2000; k<MAX_TOF; k++){
+      //  MonitorMap[i][j][k]=0.0; 
+      //}
     }
   }
 
@@ -373,6 +377,11 @@ void SaveNexusFile(uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::stri
   for(int i = 0; i< 2000; i++){
     MIdx[i]=float(midx[i]); 
   }
+  //float MIdx[MAX_TOF+1];
+  //for(int i = 0; i< MAX_TOF+1; i++){
+  //  MIdx[i]=float(i*8.0+11000); 
+  //  //std::cout << TofIdx[i] << std::endl;
+  //}
 
   for(int i = 0; i< 1; i++){
     SpectrumIdx[i]=i+1; 
@@ -381,7 +390,8 @@ void SaveNexusFile(uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::stri
   dim.clear();
   dim.push_back(1);
   dim.push_back(1);
-  dim.push_back(2000);
+  dim.push_back(1999);
+  //dim.push_back(MAX_TOF);
   file.makeData("data",NeXus::INT32,dim,true);
   file.putData(MonitorMap);
   file.putAttr("units","counts");
@@ -391,6 +401,7 @@ void SaveNexusFile(uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::stri
 
   dim.clear();
   dim.push_back(2000);
+  //dim.push_back(MAX_TOF+1);
   file.makeData("time_of_flight",NeXus::FLOAT32,dim,true);
   file.putData(MIdx);
   file.putAttr("units","microseconds");
@@ -423,13 +434,13 @@ void SaveNexusFile(uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::stri
   file.makeGroup("monitor_2","NXmonitor");
   file.openGroup("monitor_2","NXmonitor");
 
-  for(int i = 0; i< 1; i++){
-    for(int j = 0; j< 1; j++){
-      for(int k = 0; k< 2000; k++){
-	MonitorMap[i][j][k]=mmap[k]; 
-      }
-    }
-  }
+  //for(int i = 0; i< 1; i++){
+  //  for(int j = 0; j< 1; j++){
+  //    for(int k = 0; k< 2000; k++){
+  //      MonitorMap[i][j][k]=mmap[k]; 
+  //    }
+  //  }
+  //}
 
   for(int i = 0; i< 1; i++){
     SpectrumIdx[i]=i+2; 
@@ -438,7 +449,8 @@ void SaveNexusFile(uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::stri
   dim.clear();
   dim.push_back(1);
   dim.push_back(1);
-  dim.push_back(2000);
+  dim.push_back(1999);
+  //dim.push_back(MAX_TOF);
   file.makeData("data",NeXus::INT32,dim,true);
   file.putData(MonitorMap);
   file.putAttr("units","counts");
@@ -448,6 +460,7 @@ void SaveNexusFile(uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::stri
 
   dim.clear();
   dim.push_back(2000);
+  //dim.push_back(MAX_TOF+1);
   file.makeData("time_of_flight",NeXus::FLOAT32,dim,true);
   file.putData(MIdx);
   file.putAttr("units","microseconds");
@@ -480,13 +493,13 @@ void SaveNexusFile(uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::stri
   file.makeGroup("monitor_3","NXmonitor");
   file.openGroup("monitor_3","NXmonitor");
 
-  for(int i = 0; i< 1; i++){
-    for(int j = 0; j< 1; j++){
-      for(int k = 0; k< 2000; k++){
-	MonitorMap[i][j][k]=mmap[k]; 
-      }
-    }
-  }
+  //for(int i = 0; i< 1; i++){
+  //  for(int j = 0; j< 1; j++){
+  //    for(int k = 0; k< 2000; k++){
+  //      MonitorMap[i][j][k]=mmap[k]; 
+  //    }
+  //  }
+  //}
 
   for(int i = 0; i< 1; i++){
     SpectrumIdx[i]=i+3; 
@@ -495,7 +508,8 @@ void SaveNexusFile(uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::stri
   dim.clear();
   dim.push_back(1);
   dim.push_back(1);
-  dim.push_back(2000);
+  dim.push_back(1999);
+  //dim.push_back(MAX_TOF+1);
   file.makeData("data",NeXus::INT32,dim,true);
   file.putData(MonitorMap);
   file.putAttr("units","counts");
@@ -505,6 +519,7 @@ void SaveNexusFile(uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::stri
 
   dim.clear();
   dim.push_back(2000);
+  //dim.push_back(MAX_TOF);
   file.makeData("time_of_flight",NeXus::FLOAT32,dim,true);
   file.putData(MIdx);
   file.putAttr("units","microseconds");
@@ -545,7 +560,7 @@ void SaveNexusFile(uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::stri
   file.makeGroup("PD1H","IXseblock");
   file.openGroup("PD1H","IXseblock");
 
-  Values[0] = 200.;
+  Values[0] = offset;
 
   read_control = "Height Position";
   dim.clear();
@@ -935,7 +950,7 @@ int main(int argc, char *argv[])
   //  std::cout << std::endl;
   //}
   //SaveBinaryFile(cmap, binaryfile);
-  //LoadMonitorFile(midx, mmap, monitorfile); 
+  LoadMonitorFile(midx, mmap, monitorfile); 
   LoadBinaryFile(dmap, binaryfile);
   //std::cout << std::endl;
   //for(int i = 0; i< MAX_TOF; i++){
@@ -945,8 +960,8 @@ int main(int argc, char *argv[])
   //  std::cout << std::endl;
   //}
 
-  Rebin(dmap, rebinmap);
-  SaveNexusFile(rebinmap ,mmap,midx,nexusfile);
+  double offset = Rebin(dmap, rebinmap);
+  SaveNexusFile(offset, rebinmap ,mmap,midx,nexusfile);
 
   return 0;
 }
