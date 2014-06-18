@@ -1,6 +1,10 @@
-directbeam   = yes
-# direct_tof
-nexusfile    = /home/tianhl/workarea/CSNS_SANS_SIM/app/test/directbeam.nxs
-tranfile1    = /home/tianhl/workarea/CSNS_SANS_SIM/direct/direct_trans_M1.txt
-tranfile2    = /home/tianhl/workarea/CSNS_SANS_SIM/direct/direct_trans_M2.txt
-tranfile3    = /home/tianhl/workarea/CSNS_SANS_SIM/direct/direct_trans_M3.txt
+# sample reflection(theta=0.3)
+#samplefile  = /home/tianhl/workarea/CSNS_REFL_SIM/sample/Sample_ref_D_0.3.txt
+#binaryfile  = /home/tianhl/workarea/CSNS_REFL_SIM/app/test/refl_sample_0.3.raw
+#monitorfile = /home/tianhl/workarea/CSNS_REFL_SIM/sample/Sample_ref_M1_0.3.txt
+#nexusfile   = /home/tianhl/workarea/CSNS_REFL_SIM/app/test/refl_sample_0.3.nxs
+# direct reflection(theta=0.3)
+samplefile  = /home/tianhl/workarea/CSNS_REFL_SIM/sample/Sample_inc_D_0.3.txt
+binaryfile  = /home/tianhl/workarea/CSNS_REFL_SIM/app/test/inc_sample.raw
+monitorfile = /home/tianhl/workarea/CSNS_REFL_SIM/sample/Sample_inc_M1_0.3.txt
+nexusfile   = /home/tianhl/workarea/CSNS_REFL_SIM/app/test/inc_sample_0.3.nxs

@@ -127,8 +127,8 @@ void Encode_EOP(EndOfPulse* eop){
 }
 
 void SaveNexusFile(double offset, uint32_t* rebinmap, uint32_t* mmap, uint32_t* midx, std::string nexusfilename ){
-  std::cout << "SavenexusFile2 " << __LINE__  << std::endl;
-  NeXus::File file("test.nxs",  NXACC_CREATE5);
+  std::cout << "Save Nexus File: " << nexusfilename  << std::endl;
+  NeXus::File file(nexusfilename.c_str(),  NXACC_CREATE5);
   std::vector<int> dim;
 
   //enter group: raw_data_1
@@ -807,7 +807,7 @@ void LoadMonitorFile(uint32_t* midx, uint32_t* mmap, std::string samplefilename)
     boost::split( substring, samplebuff, boost::is_any_of( ";" ), boost::token_compress_on );
     mmap[tofidx] =atoi(substring[1].c_str());
     midx[tofidx] =atoi(substring[0].c_str());
-    std::cout << midx[tofidx] << " " << mmap[tofidx] << std::endl; 
+    //std::cout << midx[tofidx] << " " << mmap[tofidx] << std::endl; 
   }
   samplefile.close();
 
@@ -855,6 +855,7 @@ uint64_t Decode_RawDataSegment(uint64_t *Buff, uint32_t *dmap, uint32_t size, ui
 }
 
 void LoadBinaryFile(uint32_t *dmap, std::string binaryfilename){
+  std::cout << "Load Binary File " << binaryfilename << std::endl;
 
   /*----------------------------------------------*/
   uint32_t size = 10000;
@@ -942,14 +943,14 @@ int main(int argc, char *argv[])
   std::cout << "read sample file: " << samplefile << std::endl;
   std::cout << "save binary file: " << binaryfile << std::endl;
 
-  //LoadSimulationFile(cmap, samplefile); 
+  LoadSimulationFile(cmap, samplefile); 
   //for(int i = 0; i< MAX_TOF; i++){
   //  for(int j = 0; j< MAX_DET; j++){
   //    std::cout << cmap[MapIdx(i, j)] << " " ;
   //  }
   //  std::cout << std::endl;
   //}
-  //SaveBinaryFile(cmap, binaryfile);
+  SaveBinaryFile(cmap, binaryfile);
   LoadMonitorFile(midx, mmap, monitorfile); 
   LoadBinaryFile(dmap, binaryfile);
   //std::cout << std::endl;
