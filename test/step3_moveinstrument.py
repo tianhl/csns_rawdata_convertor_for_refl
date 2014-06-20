@@ -3,8 +3,16 @@
 ######################################################################
 LoadISISNexus(Filename=r'/home/tianhl/workarea/CSNS_REFL_SIM/app/test/refl_sample_0.3.nxs',OutputWorkspace='refl_samp_0.3')
 # theta=0.3 detector
-#CloneWorkspace(InputWorkspace='test',OutputWorkspace='detector')
+import math
+theta=0.3
+sample_to_detector_along_beam =  3.0
+theta=theta*math.pi/180.0
+up_offset = sample_to_detector_along_beam * math.sin(2.0 * theta)
+x_offset = str(up_offset)
+# detector
 CropWorkspace(InputWorkspace='refl_samp_0.3',OutputWorkspace='detector_ws_orig',StartWorkspaceIndex='3',EndWorkspaceIndex='3')
+#CloneWorkspace(InputWorkspace='detector_ws_orig',OutputWorkspace='detector_ws_orig_corr')
+#MoveInstrumentComponent(Workspace='detector_ws_orig_corr',ComponentName='point-detector',X=x_offset,Z='21.5',RelativePosition='0')
 ConvertUnits(InputWorkspace='detector_ws_orig',OutputWorkspace='detector_ws',Target='Wavelength')
 CropWorkspace(InputWorkspace='detector_ws',OutputWorkspace='detector_ws_crop',XMin='1',XMax='17')
 # monitor
@@ -17,12 +25,6 @@ RebinToWorkspace(WorkspaceToRebin='monitor_ws_bg',WorkspaceToMatch='detector_ws'
 Integration(InputWorkspace='monitor_ws_bg_rebin',OutputWorkspace='monitor_ws_bg_rebin_int',RangeLower='4',RangeUpper='10')
 Divide(LHSWorkspace='detector_ws',RHSWorkspace='monitor_ws_bg_rebin_int',OutputWorkspace='IvsLam')
 # Lambda to Q
-import math
-theta=0.3
-sample_to_detector_along_beam =  3.0
-theta=theta*math.pi/180.0
-up_offset = sample_to_detector_along_beam * math.sin(2.0 * theta)
-x_offset = str(up_offset)
 CloneWorkspace(InputWorkspace='IvsLam',OutputWorkspace='IvsLam_corr')
 MoveInstrumentComponent(Workspace='IvsLam_corr',ComponentName='point-detector',X=x_offset,Z='21.5',RelativePosition='0')
 ConvertUnits(InputWorkspace='IvsLam_corr',OutputWorkspace='IvsQ',Target='MomentumTransfer')
