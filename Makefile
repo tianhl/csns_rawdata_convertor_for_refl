@@ -1,6 +1,6 @@
 INCLUDE_FLAGS =  -I/usr/include/python2.7
 INCLUDE_FLAGS += -I/usr/include/Poco
-INCLUDE_FLAGS += -I/home/tianhl/workarea/CSNS_SANS_SIM/app/dep/nexus-4.3.0/include
+INCLUDE_FLAGS += -I/opt/nexus/nexus-4.3.1/Build/include
 INCLUDE_FLAGS += -Iinc
 
 #LIB_FLAGS =  -lboost
@@ -11,7 +11,7 @@ INCLUDE_FLAGS += -Iinc
 LIB_FLAGS = `pkg-config --cflags python`
 LIB_FLAGS += `pkg-config --libs python`
 LIB_FLAGS +=  -lboost_python
-LIB_FLAGS +=  -L/home/tianhl/workarea/CSNS_SANS_SIM/app/dep/nexus-4.3.0/lib -lNeXusCPP -lNeXus
+LIB_FLAGS +=  -L/opt/nexus/nexus-4.3.1/Build/lib -lNeXusCPP -lNeXus
 
 SHARE := -fPIC -shared -o
 CC    := g++
